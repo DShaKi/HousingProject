@@ -111,12 +111,6 @@ class House:
         conn.commit()
 
 class Session:
-    """hcursor = conn.cursor()
-    houses_list = []
-    hcursor.execute("SELECT * FROM User")
-    database_houses = hcursor.fetchall()"""
-    for h in database_houses:
-        houses_list.append(h)
     def __init__(self, housing: Housing, user: User):
         self.housing = housing
         self.user = user
@@ -124,7 +118,7 @@ class Session:
     def add_home(self, city, address, size, type, available, price, bedroomcount, furnish, other):
         new_house = self.user.add_home(self.housing.id, city, address, size, type, available, price, bedroomcount, furnish, other)
         self.housing.home_requests.append(new_house)
-        print("Your request have sent to your housing.")
+        print("Your request has sent to your housing.")
 
     def remove_user(self, name):
         all_members = housing.users + housing.admins
