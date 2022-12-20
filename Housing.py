@@ -4,9 +4,21 @@ import hashlib
 
 conn = sqlite3.connect('HousingDB.db')
 
+"""
+1. Find Home
+2. House Checker # need changes
+3. Request Best Home
+4. Show all requests (Admin)
+5. Show all Buys (User)
+6. UI (User Interface)
+"""
+
 class Housing:
-    def __init__(self, name, username, password, adminname):
-        self.id = str(uuid.uuid1())
+    def __init__(self, id, name, username, password, adminname):
+        if id == None:
+            self.id = str(uuid.uuid1())
+        else:
+            self.id = id
         self.name = name
         self.admins = [Admin(None, self.id, username, password, adminname)]
         self.users = []
@@ -52,6 +64,7 @@ class User:
         conn.execute("INSERT INTO User VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.username, self.password, self.name, self.isAdmin, ))
         conn.commit()
 
+    # need changes
     def add_home(self, housingid, city, address, size, type, available, price, bedroomcount, furnish, other):
         new_house = House(housingid, self, city, address, size, type, available, price, bedroomcount, furnish, other)
         return new_house
@@ -74,8 +87,11 @@ class Admin(User):
         conn.commit()
 
 class House:
-    def __init__(self, housingid, seller: User, city, address, size, type, available, price, bedroomcount, furnish, other):
-        self.id = str(uuid.uuid1())
+    def __init__(self, id, housingid, seller: User, city, address, size, type, available, price, bedroomcount, furnish, other):
+        if id == None:
+            self.id = str(uuid.uuid1())
+        else:
+            self.id = id
         self.housingid = housingid
         self.sellerid = seller.id
         self.city = city
@@ -106,6 +122,6 @@ class Session:
                 self.user.remove_user(u)
                 self.housing.update_values()
 
-housing = Housing("Hello", "Shayan", "Kermani", "Ker")
+housing = Housing(None, "Hello", "Shayan", "Kermani", "Ker")
 s1 = housing.get_session("Shayan", "Kermani")
 housing.create_acc("MyAcc", "123", "Shayan2")
