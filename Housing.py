@@ -14,12 +14,6 @@ conn = sqlite3.connect('HousingDB.db')
 7. Request table
 """
 
-hcursor = conn.cursor()
-houses_list = []
-hcursor.execute("SELECT * FROM User")
-database_houses = hcursor.fetchall()
-for h in database_houses:
-    houses_list.append(h)
 
 class Housing:
     def __init__(self, id, name, username, password, adminname):
@@ -115,6 +109,12 @@ class House:
         conn.commit()
 
 class Session:
+    """hcursor = conn.cursor()
+    houses_list = []
+    hcursor.execute("SELECT * FROM User")
+    database_houses = hcursor.fetchall()"""
+    for h in database_houses:
+        houses_list.append(h)
     def __init__(self, housing: Housing, user: User):
         self.housing = housing
         self.user = user
