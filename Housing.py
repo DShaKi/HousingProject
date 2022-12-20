@@ -5,13 +5,8 @@ import hashlib
 conn = sqlite3.connect('HousingDB.db')
 
 """
-1. Find Home
-2. Request Best Home
-3. Show all requests (Admin)
-4. Show all Buys (User)
-5. UI (User Interface)
-6. Request table
-7. Add admin
+1. Find Home 
+2. Request Best Home 
 """
 
 class Housing:
@@ -38,14 +33,14 @@ class Housing:
             self.house_requests = []
             self.requests = []
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM User")
+            cursor.execute("SELECT * FROM User WHERE HousingID = (?)" , (self.id ,))
             dusers = cursor.fetchall()
             for u in dusers:
                 if u[5] == 1:
                     self.admins.append(Admin(u[0], u[1], u[2], u[3], u[4], False))
                 else:
                     self.users.append(User(u[0], u[1], u[2], u[3], u[4], False))
-            cursor.execute("SELECT * FROM House")
+            cursor.execute("SELECT * FROM House WHERE HousingID = (?)" , (self.id ,))
             dhouses = cursor.fetchall()
             for h in dhouses:
                 self.houses.append(House(h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], h[8], h[9], h[10], h[11], h[12], False))
