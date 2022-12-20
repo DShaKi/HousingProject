@@ -3,7 +3,7 @@ import uuid
 import hashlib
 
 conn = sqlite3.connect('HousingDB.db')
-#test
+
 """
 1. Find Home
 2. House Checker # need changes
