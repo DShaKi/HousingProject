@@ -11,7 +11,10 @@ conn = sqlite3.connect('HousingDB.db')
 4. Show all requests (Admin)
 5. Show all Buys (User)
 6. UI (User Interface)
+7. Request table
 """
+
+houses_list = []
 
 class Housing:
     def __init__(self, id, name, username, password, adminname):
@@ -66,7 +69,7 @@ class User:
 
     # need changes
     def add_home(self, housingid, city, address, size, type, available, price, bedroomcount, furnish, other):
-        new_house = House(housingid, self, city, address, size, type, available, price, bedroomcount, furnish, other)
+        new_house = House(None , housingid, self, city, address, size, type, available, price, bedroomcount, furnish, other)
         return new_house
 
     def remove_user(self, user):
