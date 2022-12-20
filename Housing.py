@@ -12,6 +12,7 @@ conn = sqlite3.connect('HousingDB.db')
 5. Show all Buys (User)
 6. UI (User Interface)
 7. Request table
+8. Add admin
 """
 
 
@@ -25,6 +26,7 @@ class Housing:
         self.admins = [Admin(None, self.id, username, password, adminname)]
         self.users = []
         self.houses = []
+        self.home_requests = []
         self.requests = []
         conn.execute("INSERT INTO Housing VALUES (?, ?)", (self.id, self.name, ))
         conn.commit()
@@ -121,7 +123,8 @@ class Session:
 
     def add_home(self, city, address, size, type, available, price, bedroomcount, furnish, other):
         new_house = self.user.add_home(self.housing.id, city, address, size, type, available, price, bedroomcount, furnish, other)
-        self.housing.houses.append(new_house)
+        self.housing.home_requests.append(new_house)
+        print("Your request have sent to your housing.")
 
     def remove_user(self, name):
         all_members = housing.users + housing.admins
