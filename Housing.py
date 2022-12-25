@@ -111,6 +111,7 @@ class Admin(User):
 class House:
     def __init__(self, id, housingid, sellerid, city, address, size, type, available, price, bedroomcount, furnish, other, approval, add_database):
         # apprval -> 0 = Accepted, 1 = Declined, 2 = Under Review
+        # type -> 0 = Sell, 1 = rent
         if id == None:
             self.id = str(uuid.uuid1())
         else:
