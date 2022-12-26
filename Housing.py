@@ -5,8 +5,8 @@ import hashlib
 conn = sqlite3.connect('HousingDB.db')
 
 """
-1. Find Home 
-2. Request Best Home 
+1. Find Home
+2. Request Best Home
 """
 
 class Housing:
@@ -99,8 +99,9 @@ class Admin(User):
     def __init__(self, id, housingid, username, password, name, add_database):
         super().__init__(id, housingid, username, password, name, add_database)
         self.isAdmin = True
-        conn.execute("UPDATE User SET isAdmin = (?) WHERE ID = (?)", (self.isAdmin, self.id, ))
-        conn.commit()
+        if add_database == True:
+            conn.execute("UPDATE User SET isAdmin = (?) WHERE ID = (?)", (self.isAdmin, self.id, ))
+            conn.commit()
     
     def remove_user(self, user):
         conn.execute("DELETE FROM User WHERE ID = (?)", (user.id, ))
@@ -153,18 +154,21 @@ class Session:
                 self.housing.update_values()
 
     def check_approval(self, houseid):
-        if self.user.isAdmin == True or self.user.isAdmin == 1:
+        if self.user.isAdmin == True:
             for h in self.housing.houses:
                 if h.id == houseid:
                     index = self.housing.houses.index(h)
-                    self.housing.houses[index].approval == 0
+                    self.housing.houses[index].approval = 0
                     conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (0, h.id, ))
                     conn.commit()
                     index2 = self.housing.house_requests.index(h.id)
+                    conn.execute("DELETE FROM HouseRequest WHERE HouseID=(?)", (h.id, ))
+                    conn.commit()
                     self.housing.house_requests.remove(h.id)
                     print("The house approved.")
-                else:
-                    print("There is no house with this id.")
+                    break
+            else:
+                print("There is no house with this id.")
         else:
             print("Access Denied!")
 
