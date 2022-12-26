@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Saha Housing - Sign In</string>
+   <string>Saha Housings - Sign In</string>
   </property>
   <widget class="QWidget" name="verticalLayoutWidget_3">
    <property name="geometry">
@@ -150,7 +150,7 @@
        </size>
       </property>
       <property name="text">
-       <string>Saha Housing</string>
+       <string>Saha Housings</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
