@@ -87,8 +87,8 @@ class User:
             conn.execute("INSERT INTO User VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.username, self.password, self.name, self.isAdmin, ))
             conn.commit()
 
-    def add_house(self, housingid, city, address, size, type, available, price, bedroomcount, furnish, other, approval):
-        new_house = House(None , housingid, self.id, city, address, size, type, available, price, bedroomcount, furnish, other, approval, True)
+    def add_house(self, housingid, city, address, size, type, available, price, bedroomcount, furnish, other, approval, rent_price):
+        new_house = House(None , housingid, self.id, city, address, size , available, price, bedroomcount, furnish, other, approval , True , rent_price)
         return new_house
 
     def remove_user(self, user):
@@ -110,9 +110,8 @@ class Admin(User):
         conn.commit()
 
 class House:
-    def __init__(self, id, housingid, sellerid, city, address, size, type, available, price, bedroomcount, furnish, other, approval, add_database):
+    def __init__(self, id, housingid, sellerid, city, address, size, available, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
         # apprval -> 0 = Accepted, 1 = Declined, 2 = Under Review
-        # type -> 0 = Sell, 1 = rent
         if id == None:
             self.id = str(uuid.uuid1())
         else:
@@ -122,15 +121,15 @@ class House:
         self.city = city
         self.address = address
         self.size = size
-        self.type = type
         self.available = available
         self.price = price
         self.bedroomcount = bedroomcount
         self.furnish = furnish
         self.other = other
         self.approval = approval
+        self.rent_price = rent_price
         if add_database == True:
-            conn.execute("INSERT INTO House VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.sellerid, self.city, self.address, self.size, self.type, self.available, self.price, self.bedroomcount, self.furnish, self.other, self.approval, ))
+            conn.execute("INSERT INTO House VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.sellerid, self.city, self.address, self.size, self.rent_price, self.available, self.price, self.bedroomcount, self.furnish, self.other, self.approval, ))
             conn.commit()
 
 class Session:
@@ -138,8 +137,8 @@ class Session:
         self.housing = housing
         self.user = user
 
-    def add_house(self, city, address, size, type, available, price, bedroomcount, furnish, other):
-        new_house = self.user.add_house(self.housing.id, city, address, size, type, available, price, bedroomcount, furnish, other, 3)
+    def add_house(self, city, address, size, type, available, price, bedroomcount, furnish, other, rent_price):
+        new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 3 , rent_price)
         self.housing.houses.append(new_house)
         self.housing.house_requests.append(new_house)
         conn.execute("INSERT INTO HouseRequest VALUES (?)", (new_house.id, ))
@@ -171,6 +170,7 @@ class Session:
                 print("There is no house with this id.")
         else:
             print("Access Denied!")
+
 
 main_cursor = conn.cursor()
 main_cursor.execute("SELECT * FROM Housing")
