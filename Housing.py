@@ -21,7 +21,6 @@ class Housing:
             self.users = []
             self.houses = []
             self.house_requests = []
-            self.requests = []
             conn.execute("INSERT INTO Housing VALUES (?, ?, ?, ?, ?)", (self.id, self.name, username, password, adminname, ))
             conn.commit()
         else:
@@ -137,7 +136,13 @@ class Session:
         self.housing = housing
         self.user = user
 
-    def add_house(self, city, address, size, type, available, price, bedroomcount, furnish, other, rent_price):
+    def get_status(self):
+        if self.user.isAdmin == 1:
+            print(self.housing.name + " " + self.housing.id + "\n" + "Houses :" , self.housing.houses , "\n" + "Requests :" , self.housing.house_requests)
+        else:
+            print("You're not admin.")
+
+    def add_house(self, city, address, size, available, price, bedroomcount, furnish, other, rent_price):
         new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 3 , rent_price)
         self.housing.houses.append(new_house)
         self.housing.house_requests.append(new_house)
@@ -170,6 +175,28 @@ class Session:
                 print("There is no house with this id.")
         else:
             print("Access Denied!")
+    def find_home_list(self, size, price, bedroomcount, furnish, rent_price): #size : min , price : max , furnish : 0 | 1 , bedroomcount : min , rent_price : max
+        home_list = []
+        for home in self.housing.houses:
+            if home.size >= size and home.price <= price and furnish == home.furnish and bedroomcount <= home.bedroomcount and rent_price >= home.rent_price:
+                home_list.append(home)
+        return home_list
+
+    def find_home(self, size, price, bedroomcount, furnish, rent_price , best_home : int): #best_home : 1 => lower price , 2 => bigger size
+        def Size(a : House):
+            return a.size
+        def Price(a : House):
+            return a.price
+        home_list = find_home_list(self, size, price, bedroomcount, furnish, rent_price)
+        if len(home_list) == 0:
+            return "There isn't any house with these choices."
+        elif best_home == 1:
+            home_list.sort(key=Price , reverse = False)
+            return home_list[0]
+        elif best_home == 2:
+            home_list.sort(key=Size , reverse = True)
+            return home_list[0]
+
 
 
 main_cursor = conn.cursor()
