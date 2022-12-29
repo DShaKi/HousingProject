@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, Qt
 import sqlite3
 import uuid
 import hashlib
@@ -252,6 +252,9 @@ class Session:
                 print(i)
 
 class Ui_MainWindow(object):
+    logged = True
+    housing = None
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(590, 276)
@@ -301,7 +304,7 @@ class Ui_MainWindow(object):
         self.housesLayout = QtWidgets.QVBoxLayout()
         self.housesLayout.setSpacing(15)
         self.housesLayout.setObjectName("housesLayout")
-        self.addHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
+        self.addHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4, clicked = lambda: self.add_house())
         self.addHouseButton.setObjectName("addHouseButton")
         self.housesLayout.addWidget(self.addHouseButton)
         self.searchHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
@@ -367,6 +370,18 @@ class Ui_MainWindow(object):
         self.removeUserButton.setText(_translate("MainWindow", "Remove User"))
         self.showHousingInfoButton.setText(_translate("MainWindow", "Show Housing Info"))
 
+    def add_house(self):
+        if self.housing == None:
+            self.hdlg = QtWidgets.QWidget()
+            self.createHousingButton = QtWidgets.QPushButton("Create Housing", clicked = lambda: self.create_housing())
+            self.loginHousingButton = QtWidgets.QPushButton("Login to a Housing", clicked = lambda: self.create_housing())
+            self.hdlg.addButton(self.createHousingButton)
+            self.hdlg.addButton(self.loginHousingButton)
+            self.hdlg.show()
+
+    def create_housing(self):
+        self.hdlg.show()
+
 main_cursor = conn.cursor()
 main_cursor.execute("SELECT * FROM Housing")
 dmain_housings = main_cursor.fetchall()
@@ -389,13 +404,13 @@ s2 = main_housings[0].get_session("MyAcc", "123")
 # s1.add_admin("AHY", "2007", "Amirhossein")
 # print(s2.find_home_list(120, 120000, 0, 1, 2000))
 
-print(s1.find_home(110, 1300, 0, 1, 0 , 1))
+# print(s1.find_home(110, 1300, 0, 1, 0 , 1))
 
-# if __name__ == "__main__":
-#     import sys
-#     app = QtWidgets.QApplication(sys.argv)
-#     MainWindow = QtWidgets.QMainWindow()
-#     ui = Ui_MainWindow()
-#     ui.setupUi(MainWindow)
-#     MainWindow.show()
-#     sys.exit(app.exec_())
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
