@@ -212,20 +212,24 @@ class Session:
             return a.size
         def Price(a : House):
             return a.price
-        home_list = self.find_home_list(self, size, price, bedroomcount, furnish, rent_price)
+        home_list = self.find_home_list(size, price, bedroomcount, furnish, rent_price)
         if len(home_list) == 0:
             return "There isn't any house with these choices."
         elif best_home == 1:
             home_list.sort(key=Price , reverse = False)
             if rent_price == 0:
-                #not rent => change seller_id
-                pass
+                index = self.housing.houses.index(home_list[0])
+                self.housing.houses[index].sellerid = self.user.id
+                conn.execute("UPDATE House SET SellerID = (?) WHERE HouseID = (?)", (self.user.id, self.housing.houses[index].id, ))
+                conn.commit()
             return home_list[0]
         elif best_home == 2:
             home_list.sort(key=Size , reverse = True)
             if rent_price == 0:
-                #not rent => change seller_id
-                pass
+                index = self.housing.houses.index(home_list[0])
+                self.housing.houses[index].sellerid = self.user.id
+                conn.execute("UPDATE House SET SellerID = (?) WHERE HouseID = (?)", (self.user.id, self.housing.houses[index].id, ))
+                conn.commit()
             return home_list[0]
     def show_my_houses(self):
         for i in self.housing.houses:
@@ -369,6 +373,8 @@ s2 = main_housings[0].get_session("MyAcc", "123")
 # s1.check_approval(main_housings[0].house_requests[0])
 # s1.add_admin("AHY", "2007", "Amirhossein")
 # print(s2.find_home_list(120, 120000, 0, 1, 2000))
+
+print(s1.find_home(110, 1300, 0, 1, 0 , 1))
 
 # if __name__ == "__main__":
 #     import sys
