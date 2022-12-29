@@ -208,9 +208,6 @@ class Session:
         return home_list
 
     def find_home(self, size, price, bedroomcount, furnish, rent_price , best_home : int): #best_home : 1 => lower price , 2 => bigger size
-        if rent_price == 0:
-            #not rent => change seller_id
-            pass
         def Size(a : House):
             return a.size
         def Price(a : House):
@@ -220,9 +217,15 @@ class Session:
             return "There isn't any house with these choices."
         elif best_home == 1:
             home_list.sort(key=Price , reverse = False)
+            if rent_price == 0:
+                #not rent => change seller_id
+                pass
             return home_list[0]
         elif best_home == 2:
             home_list.sort(key=Size , reverse = True)
+            if rent_price == 0:
+                #not rent => change seller_id
+                pass
             return home_list[0]
     def show_my_houses(self):
         for i in self.housing.houses:
