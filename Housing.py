@@ -110,7 +110,7 @@ class Admin(User):
 
 class House:
     def __init__(self, id, housingid, sellerid, city, address, size, available, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
-        # apprval -> 0 = Accepted, 1 = Declined, 2 = Under Review
+        # apprval -> 1 = Accepted, 2 = Declined or Sold, 3 = Under Review
         if id == None:
             self.id = str(uuid.uuid1())
         else:
@@ -136,6 +136,12 @@ class Session:
         self.housing = housing
         self.user = user
 
+    def add_admin(self, id, housingid, username, password, name):
+        if self.user.isAdmin == 0:
+            print("You are not admin.")
+        self.housing.admins.append(Admin(id, housingid, username, password, name, add_database))
+        #data base
+
     def get_status(self):
         if self.user.isAdmin == 1:
             print(self.housing.name + " " + self.housing.id + "\n" + "Houses :" , self.housing.houses , "\n" + "Requests :" , self.housing.house_requests)
@@ -143,12 +149,21 @@ class Session:
             print("You're not admin.")
 
     def add_house(self, city, address, size, available, price, bedroomcount, furnish, other, rent_price):
-        new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 3 , rent_price)
-        self.housing.houses.append(new_house)
-        self.housing.house_requests.append(new_house)
-        conn.execute("INSERT INTO HouseRequest VALUES (?)", (new_house.id, ))
-        conn.commit()
-        print("Your request has sent to your housing.")
+        new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 2 , rent_price)
+        if new_house not in self.housing.houses:
+            new_house.approval = 3
+            if new_house not in self.housing.house:
+                self.housing.houses.append(new_house)
+                self.housing.house_requests.append(new_house)
+                conn.execute("INSERT INTO HouseRequest VALUES (?)", (new_house.id, ))
+                conn.commit()
+                print("Your request has sent to your housing.")
+            else:
+                print("You have sent request or it's on sell.")
+        else:
+            (self.housing.houses.index(new_house)).approval = 1
+            #data base update
+            print("Your house is on sell.")
 
     def remove_user(self, name, all_members):
         all_members = self.housing.users + self.housing.admins
@@ -178,11 +193,12 @@ class Session:
     def find_home_list(self, size, price, bedroomcount, furnish, rent_price): #size : min , price : max , furnish : 0 | 1 , bedroomcount : min , rent_price : max
         home_list = []
         for home in self.housing.houses:
-            if home.size >= size and home.price <= price and furnish == home.furnish and bedroomcount <= home.bedroomcount and rent_price >= home.rent_price:
+            if home.size >= size and home.price <= price and furnish == home.furnish and bedroomcount <= home.bedroomcount and rent_price >= home.rent_price and home.approval == 1:
                 home_list.append(home)
         return home_list
 
     def find_home(self, size, price, bedroomcount, furnish, rent_price , best_home : int): #best_home : 1 => lower price , 2 => bigger size
+        #change seller id
         def Size(a : House):
             return a.size
         def Price(a : House):
