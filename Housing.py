@@ -120,7 +120,9 @@ class Admin(User):
 
 class House:
     def __init__(self, id, housingid, sellerid, city, address, size, available, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
-        # apprval -> 1 = Accepted, 2 = Declined or Sold, 3 = Under Review
+        # apprval -> 1 = Accepted, 2 = Sold or No Action, 3 = Under Review
+        # available -> rent_id (database int -> string)
+        # apprval -> status
         if id == None:
             self.id = str(uuid.uuid1())
         else:
@@ -207,6 +209,9 @@ class Session:
                 home_list.append(home)
         return home_list
 
+    def check_approval_rent(self , house : House):
+        house.available = 1
+
     def find_home(self, size, price, bedroomcount, furnish, rent_price , best_home : int): #best_home : 1 => lower price , 2 => bigger size
         def Size(a : House):
             return a.size
@@ -220,20 +225,30 @@ class Session:
             if rent_price == 0:
                 index = self.housing.houses.index(home_list[0])
                 self.housing.houses[index].sellerid = self.user.id
+                self.housing.houses[index].approval = 2
                 conn.execute("UPDATE House SET SellerID = (?) WHERE HouseID = (?)", (self.user.id, self.housing.houses[index].id, ))
                 conn.commit()
+            else:
+                index = self.housing.houses.index(home_list[0])
+                self.housing.houses[index].approval = 2
+                self.housing.houses[index].available = self.user.id
             return home_list[0]
         elif best_home == 2:
             home_list.sort(key=Size , reverse = True)
             if rent_price == 0:
                 index = self.housing.houses.index(home_list[0])
                 self.housing.houses[index].sellerid = self.user.id
+                self.housing.houses[index].approval = 2
                 conn.execute("UPDATE House SET SellerID = (?) WHERE HouseID = (?)", (self.user.id, self.housing.houses[index].id, ))
                 conn.commit()
+            else:
+                index = self.housing.houses.index(home_list[0])
+                self.housing.houses[index].approval = 2
+                self.housing.houses[index].available = self.user.id
             return home_list[0]
     def show_my_houses(self):
         for i in self.housing.houses:
-            if i.sellerid == self.user.id:
+            if i.sellerid == self.user.id or i.available == self.user.id:
                 print(i)
 
 class Ui_MainWindow(object):
