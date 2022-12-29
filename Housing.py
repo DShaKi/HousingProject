@@ -6,8 +6,7 @@ import hashlib
 conn = sqlite3.connect('HousingDB.db')
 
 """
-1. Find Home
-2. Request Best Home
+1. Request Best Home
 """
 
 class Housing:
@@ -27,7 +26,7 @@ class Housing:
         else:
             self.id = id
             self.name = name
-            self.admins = [Admin(None, self.id, username, password, adminname, False)]
+            self.admins = []
             self.users = []
             self.houses = []
             self.house_requests = []
@@ -80,18 +79,24 @@ class User:
             self.id = id
         self.housingid = housingid
         self.username = username
-        self.password = str(hashlib.md5(str(password + housingid).encode('utf-8')).hexdigest())
+        if add_database == True:
+            self.password = str(hashlib.md5(str(password + housingid).encode('utf-8')).hexdigest())
+        else:
+            self.password = password
         self.name = name
         self.isAdmin = False
         if add_database == True:
             conn.execute("INSERT INTO User VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.username, self.password, self.name, self.isAdmin, ))
             conn.commit()
 
-    def add_house(self, housingid, city, address, size, type, available, price, bedroomcount, furnish, other, approval, rent_price):
+    def add_house(self, housingid, city, address, size, available, price, bedroomcount, furnish, other, approval, rent_price):
         new_house = House(None , housingid, self.id, city, address, size , available, price, bedroomcount, furnish, other, approval , True , rent_price)
         return new_house
 
     def remove_user(self, user):
+        print("Access Denied!")
+
+    def add_admin(self, id, housingid, username, password, name):
         print("Access Denied!")
 
 
@@ -108,6 +113,10 @@ class Admin(User):
         print(f"User {user.name} removed.")
         del user
         conn.commit()
+    
+    def add_admin(self, housingid, username, password, name):
+        admin = Admin(None, housingid, username, password, name, True)
+        return admin
 
 class House:
     def __init__(self, id, housingid, sellerid, city, address, size, available, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
@@ -137,11 +146,9 @@ class Session:
         self.housing = housing
         self.user = user
 
-    def add_admin(self, id, housingid, username, password, name):
-        if self.user.isAdmin == 0:
-            print("You are not admin.")
-        self.housing.admins.append(Admin(id, housingid, username, password, name, add_database))
-        #data base
+    def add_admin(self, username, password, name):
+        new_admin = self.user.add_admin(self.housing.id, username, password, name)
+        self.housing.admins.append(new_admin)
 
     def get_status(self):
         if self.user.isAdmin == 1:
@@ -153,7 +160,7 @@ class Session:
         new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 2 , rent_price)
         if new_house not in self.housing.houses:
             new_house.approval = 3
-            if new_house not in self.housing.house:
+            if new_house not in self.housing.houses:
                 self.housing.houses.append(new_house)
                 self.housing.house_requests.append(new_house)
                 conn.execute("INSERT INTO HouseRequest VALUES (?)", (new_house.id, ))
@@ -163,7 +170,8 @@ class Session:
                 print("You have sent request or it's on sell.")
         else:
             (self.housing.houses.index(new_house)).approval = 1
-            #data base update
+            conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (1, h.id, ))
+            conn.commit()
             print("Your house is on sell.")
 
     def remove_user(self, name, all_members):
@@ -178,8 +186,8 @@ class Session:
             for h in self.housing.houses:
                 if h.id == houseid:
                     index = self.housing.houses.index(h)
-                    self.housing.houses[index].approval = 0
-                    conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (0, h.id, ))
+                    self.housing.houses[index].approval = 1
+                    conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (1, h.id, ))
                     conn.commit()
                     index2 = self.housing.house_requests.index(h.id)
                     conn.execute("DELETE FROM HouseRequest WHERE HouseID=(?)", (h.id, ))
@@ -191,6 +199,7 @@ class Session:
                 print("There is no house with this id.")
         else:
             print("Access Denied!")
+
     def find_home_list(self, size, price, bedroomcount, furnish, rent_price): #size : min , price : max , furnish : 0 | 1 , bedroomcount : min , rent_price : max
         home_list = []
         for home in self.housing.houses:
@@ -204,7 +213,7 @@ class Session:
             return a.size
         def Price(a : House):
             return a.price
-        home_list = find_home_list(self, size, price, bedroomcount, furnish, rent_price)
+        home_list = self.find_home_list(self, size, price, bedroomcount, furnish, rent_price)
         if len(home_list) == 0:
             return "There isn't any house with these choices."
         elif best_home == 1:
@@ -213,8 +222,6 @@ class Session:
         elif best_home == 2:
             home_list.sort(key=Size , reverse = True)
             return home_list[0]
-
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -343,15 +350,22 @@ for h in dmain_housings:
 # housing.create_acc("MyAcc", "123", "ShK2")
 # s4 = housing.get_session("MyAcc", "123")
 # s4.add_house("Tehran", "123", 120, "Sell", 1, 1200, 2, 1, "Nothing")
-# s1 = main_housings[0].get_session("Shayan", "Kermani")
-# s2 = main_housings[0].get_session("MyAcc", "123")
+s1 = main_housings[0].get_session("Shayan", "Kermani")
+s2 = main_housings[0].get_session("MyAcc", "123")
+# s2.add_house("Tehran", "123", 120, 1, 1200, 2, 1, "Nothing", 0)
+# s2.add_house("Karaj", "123", 110, 1, 12000, 2, 1, "Nothing", 0)
+# s2.add_house("Tehran", "123", 130, 1, 120000, 2, 1, "Nothing", 2000)
 # s1.check_approval(main_housings[0].house_requests[0])
+# s1.check_approval(main_housings[0].house_requests[0])
+# s1.check_approval(main_housings[0].house_requests[0])
+# s1.add_admin("AHY", "2007", "Amirhossein")
+# print(s2.find_home_list(120, 120000, 0, 1, 2000))
 
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+# if __name__ == "__main__":
+#     import sys
+#     app = QtWidgets.QApplication(sys.argv)
+#     MainWindow = QtWidgets.QMainWindow()
+#     ui = Ui_MainWindow()
+#     ui.setupUi(MainWindow)
+#     MainWindow.show()
+#     sys.exit(app.exec_())
