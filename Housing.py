@@ -3,7 +3,6 @@ import sqlite3
 import uuid
 import hashlib
 import sys
-from UI.HousingCheckUi import Ui_HousingCheck
 
 conn = sqlite3.connect('HousingDB.db')
 
@@ -70,7 +69,6 @@ class Housing:
         all_members = self.admins + self.users
         for u in all_members:
             if u.username == username and u.password == str(hashlib.md5(str(password + self.id).encode('utf-8')).hexdigest()):
-                print("Logged in!")
                 return Session(self, u)
 
 class User:
@@ -253,9 +251,213 @@ class Session:
             if i.sellerid == self.user.id or i.available == self.user.id:
                 print(i)
 
+class Ui_CreateHousing(object):
+    def setupUi(self, CreatHousing):
+        CreatHousing.setObjectName("CreatHousing")
+        CreatHousing.resize(390, 460)
+        CreatHousing.setMinimumSize(QtCore.QSize(390, 460))
+        CreatHousing.setMaximumSize(QtCore.QSize(390, 460))
+        self.verticalLayoutWidget = QtWidgets.QWidget(CreatHousing)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 60, 281, 341))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.nameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.nameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.nameLabel.setObjectName("nameLabel")
+        self.verticalLayout.addWidget(self.nameLabel)
+        self.housingNameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.housingNameTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.housingNameTextEdit.setObjectName("housingNameTextEdit")
+        self.verticalLayout.addWidget(self.housingNameTextEdit)
+        self.adminUsernameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminUsernameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminUsernameLabel.setObjectName("adminUsernameLabel")
+        self.verticalLayout.addWidget(self.adminUsernameLabel)
+        self.adminUsernameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminUsernameTextEdit.setMaximumSize(QtCore.QSize(16777212, 30))
+        self.adminUsernameTextEdit.setObjectName("adminUsernameTextEdit")
+        self.verticalLayout.addWidget(self.adminUsernameTextEdit)
+        self.adminPasswordLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminPasswordLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminPasswordLabel.setObjectName("adminPasswordLabel")
+        self.verticalLayout.addWidget(self.adminPasswordLabel)
+        self.adminPasswordTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminPasswordTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.adminPasswordTextEdit.setObjectName("adminPasswordTextEdit")
+        self.verticalLayout.addWidget(self.adminPasswordTextEdit)
+        self.adminNameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminNameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminNameLabel.setObjectName("adminNameLabel")
+        self.verticalLayout.addWidget(self.adminNameLabel)
+        self.adminNameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminNameTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.adminNameTextEdit.setObjectName("adminNameTextEdit")
+        self.verticalLayout.addWidget(self.adminNameTextEdit)
+        self.createHousingButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.create_housing())
+        self.createHousingButton.setObjectName("createHousingButton")
+        self.verticalLayout.addWidget(self.createHousingButton)
+        self.crLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.crLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.crLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.crLabel.setObjectName("crLabel")
+        self.verticalLayout.addWidget(self.crLabel)
+
+        self.retranslateUi(CreatHousing)
+        QtCore.QMetaObject.connectSlotsByName(CreatHousing)
+
+    def retranslateUi(self, CreatHousing):
+        _translate = QtCore.QCoreApplication.translate
+        CreatHousing.setWindowTitle(_translate("CreatHousing", "Saha Housings - Create Housing"))
+        self.nameLabel.setText(_translate("CreatHousing", "Name"))
+        self.adminUsernameLabel.setText(_translate("CreatHousing", "Admin Username"))
+        self.adminPasswordLabel.setText(_translate("CreatHousing", "Admin Password"))
+        self.adminNameLabel.setText(_translate("CreatHousing", "name"))
+        self.createHousingButton.setText(_translate("CreatHousing", "Create "))
+        self.crLabel.setText(_translate("CreatHousing", "Saha Housings"))
+
+    def create_housing(self):
+        ui.housing = Housing(None, self.housingNameTextEdit.toPlainText(), self.adminUsernameTextEdit.toPlainText(), self.adminPasswordTextEdit.toPlainText(), self.adminNameTextEdit.toPlainText(), True)
+        
+        succdialog = QtWidgets.QMessageBox()
+        succdialog.setWindowTitle("Success")
+        succdialog.setText("Your new housing added to our system. Just get back and sign yourself in.")
+        button = succdialog.exec()
+
+        if button == QtWidgets.QMessageBox.Ok:
+            succdialog.close()
+
+class Ui_SignInHousing(object):
+    def setupUi(self, SignInHousing):
+        SignInHousing.setObjectName("SignInHousing")
+        SignInHousing.resize(390, 460)
+        SignInHousing.setMinimumSize(QtCore.QSize(390, 460))
+        SignInHousing.setMaximumSize(QtCore.QSize(390, 460))
+        self.verticalLayoutWidget = QtWidgets.QWidget(SignInHousing)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 60, 281, 341))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.housingNameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.housingNameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.housingNameLabel.setObjectName("housingNameLabel")
+        self.verticalLayout.addWidget(self.housingNameLabel)
+        self.housingNameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.housingNameTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.housingNameTextEdit.setObjectName("housingNameTextEdit")
+        self.verticalLayout.addWidget(self.housingNameTextEdit)
+        self.usernameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.usernameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.usernameLabel.setObjectName("usernameLabel")
+        self.verticalLayout.addWidget(self.usernameLabel)
+        self.usernameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.usernameTextEdit.setMaximumSize(QtCore.QSize(16777212, 30))
+        self.usernameTextEdit.setObjectName("usernameTextEdit")
+        self.verticalLayout.addWidget(self.usernameTextEdit)
+        self.passwordLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.passwordLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.passwordLabel.setObjectName("passwordLabel")
+        self.verticalLayout.addWidget(self.passwordLabel)
+        self.passwordTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.passwordTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.passwordTextEdit.setObjectName("passwordTextEdit")
+        self.verticalLayout.addWidget(self.passwordTextEdit)
+        self.signinHousingButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.signin())
+        self.signinHousingButton.setObjectName("signinHousingButton")
+        self.verticalLayout.addWidget(self.signinHousingButton)
+        self.crLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.crLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.crLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.crLabel.setObjectName("crLabel")
+        self.verticalLayout.addWidget(self.crLabel)
+
+        self.retranslateUi(SignInHousing)
+        QtCore.QMetaObject.connectSlotsByName(SignInHousing)
+
+    def signin(self):
+        self.cursor = conn.cursor()
+        self.cursor.execute("SELECT * FROM User")
+        users = self.cursor.fetchall()
+        for u in users:
+            if u[2] == self.usernameTextEdit.toPlainText() and u[3] == str(hashlib.md5(str(self.passwordTextEdit.toPlainText() + u[1]).encode('utf-8')).hexdigest()):
+                self.cursor.execute("SELECT * FROM Housing WHERE ID = (?)", (u[1], ))
+                housings = self.cursor.fetchall()
+                ui.housing = Housing(housings[0][0], housings[0][1], housings[0][2], housings[0][3], housings[0][4], False)
+                ui.session = ui.housing.get_session(u[2], self.passwordTextEdit.toPlainText())
+                succdialog = QtWidgets.QMessageBox()
+                succdialog.setWindowTitle("Success")
+                succdialog.setText("Your Signed in. Enjoy!")
+                button = succdialog.exec()
+
+                if button == QtWidgets.QMessageBox.Ok:
+                    succdialog.close()
+
+                break
+        else:
+            errdialog = QtWidgets.QMessageBox()
+            errdialog.setWindowTitle("Error Occurred!")
+            errdialog.setText("Username or password is not valid.")
+            button = errdialog.exec()
+
+            if button == QtWidgets.QMessageBox.Ok:
+                errdialog.close()
+
+    def retranslateUi(self, SignInHousing):
+        _translate = QtCore.QCoreApplication.translate
+        SignInHousing.setWindowTitle(_translate("SignInHousing", "Saha Housings - Sign In to a Housing"))
+        self.housingNameLabel.setText(_translate("SignInHousing", "Housing name"))
+        self.usernameLabel.setText(_translate("SignInHousing", "Username"))
+        self.passwordLabel.setText(_translate("SignInHousing", "Password"))
+        self.signinHousingButton.setText(_translate("SignInHousing", "Sign In"))
+        self.crLabel.setText(_translate("SignInHousing", "Saha Housings"))
+
+class Ui_HousingCheck(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(380, 220)
+        Form.setMinimumSize(QtCore.QSize(380, 220))
+        Form.setMaximumSize(QtCore.QSize(380, 220))
+        self.verticalLayoutWidget = QtWidgets.QWidget(Form)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 50, 280, 110))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.createHousingButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.create_housing())
+        self.createHousingButton.setObjectName("createHousingButton")
+        self.verticalLayout.addWidget(self.createHousingButton)
+        self.signinHousingButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.signin_housing())
+        self.signinHousingButton.setObjectName("signinHousingButton")
+        self.verticalLayout.addWidget(self.signinHousingButton)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Saha Housings - Housing Check"))
+        self.createHousingButton.setText(_translate("Form", "Create Housing"))
+        self.signinHousingButton.setText(_translate("Form", "Sign in to a housing"))
+
+    def create_housing(self):
+        self.createHousingWindow = QtWidgets.QWidget()
+        self.createHousingUi = Ui_CreateHousing()
+        self.createHousingUi.setupUi(self.createHousingWindow)
+        self.createHousingWindow.show()
+    
+    def signin_housing(self):
+        self.signinHousingWindow = QtWidgets.QWidget()
+        self.signinHousingUi = Ui_SignInHousing()
+        self.signinHousingUi.setupUi(self.signinHousingWindow)
+        self.signinHousingWindow.show()
+
 class Ui_MainWindow(object):
-    logged = True
     housing = None
+    session = None
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -379,24 +581,24 @@ class Ui_MainWindow(object):
         self.checkHousingWindow.show()
 
     def add_house(self):
-        if self.housing == None:
+        if self.session == None:
             self.check_housing()
         else:
             pass
 
-main_cursor = conn.cursor()
-main_cursor.execute("SELECT * FROM Housing")
-dmain_housings = main_cursor.fetchall()
-main_housings = []
-for h in dmain_housings:
-    main_housings.append(Housing(h[0], h[1], h[2], h[3], h[4], False))
+# main_cursor = conn.cursor()
+# main_cursor.execute("SELECT * FROM Housing")
+# dmain_housings = main_cursor.fetchall()
+# main_housings = []
+# for h in dmain_housings:
+#     main_housings.append(Housing(h[0], h[1], h[2], h[3], h[4], False))
 # housing = Housing(None, "Hello", "Shayan", "Kermani", "ShK", True)
 # s3 = housing.get_session("Shayan", "Kermani")
 # housing.create_acc("MyAcc", "123", "ShK2")
 # s4 = housing.get_session("MyAcc", "123")
 # s4.add_house("Tehran", "123", 120, "Sell", 1, 1200, 2, 1, "Nothing")
-s1 = main_housings[0].get_session("Shayan", "Kermani")
-s2 = main_housings[0].get_session("MyAcc", "123")
+# s1 = main_housings[0].get_session("Shayan", "Kermani")
+# s2 = main_housings[0].get_session("MyAcc", "123")
 # s2.add_house("Tehran", "123", 120, 1, 1200, 2, 1, "Nothing", 0)
 # s2.add_house("Karaj", "123", 110, 1, 12000, 2, 1, "Nothing", 0)
 # s2.add_house("Tehran", "123", 130, 1, 120000, 2, 1, "Nothing", 2000)
@@ -409,7 +611,6 @@ s2 = main_housings[0].get_session("MyAcc", "123")
 # print(s1.find_home(110, 1300, 0, 1, 0 , 1))
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
