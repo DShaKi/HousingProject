@@ -1,8 +1,10 @@
-from PyQt5 import QtCore, QtWidgets, Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
 import sqlite3
 import uuid
 import hashlib
 import sys
+import pandas as pd
 
 conn = sqlite3.connect('HousingDB.db')
 
@@ -89,8 +91,8 @@ class User:
             conn.execute("INSERT INTO User VALUES (?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.username, self.password, self.name, self.isAdmin, ))
             conn.commit()
 
-    def add_house(self, housingid, city, address, size, available, price, bedroomcount, furnish, other, approval, rent_price):
-        new_house = House(None , housingid, self.id, city, address, size , available, price, bedroomcount, furnish, other, approval , True , rent_price)
+    def add_house(self, housingid, city, address, size, rent_id, price, bedroomcount, furnish, other, approval, rent_price):
+        new_house = House(None , housingid, self.id, city, address, size , rent_id, price, bedroomcount, furnish, other, approval , True , rent_price)
         return new_house
 
     def remove_user(self, user):
@@ -119,9 +121,9 @@ class Admin(User):
         return admin
 
 class House:
-    def __init__(self, id, housingid, sellerid, city, address, size, available, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
+    def __init__(self, id, housingid, sellerid, city, address, size, rent_id, price, bedroomcount, furnish, other, approval, add_database, rent_price): # if for sell => rent_price = 0
         # apprval -> 1 = Accepted, 2 = Sold or No Action, 3 = Under Review
-        # available -> rent_id (database int -> string)
+        # rent_id -> 1 = Not rented
         # apprval -> status
         if id == None:
             self.id = str(uuid.uuid1())
@@ -132,7 +134,7 @@ class House:
         self.city = city
         self.address = address
         self.size = size
-        self.available = available
+        self.rent_id = rent_id
         self.price = price
         self.bedroomcount = bedroomcount
         self.furnish = furnish
@@ -140,7 +142,7 @@ class House:
         self.approval = approval
         self.rent_price = rent_price
         if add_database == True:
-            conn.execute("INSERT INTO House VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.sellerid, self.city, self.address, self.size, self.rent_price, self.available, self.price, self.bedroomcount, self.furnish, self.other, self.approval, ))
+            conn.execute("INSERT INTO House VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (self.id, self.housingid, self.sellerid, self.city, self.address, self.size, self.rent_id, self.price, self.bedroomcount, self.furnish, self.other, self.approval, self.rent_price, ))
             conn.commit()
 
 class Session:
@@ -158,8 +160,8 @@ class Session:
         else:
             print("You're not admin.")
 
-    def add_house(self, city, address, size, available, price, bedroomcount, furnish, other, rent_price):
-        new_house = self.user.add_house(self.housing.id, city, address, size, available, price, bedroomcount, furnish, other, 2 , rent_price)
+    def add_house(self, city, address, size, rent_id, price, bedroomcount, furnish, other, rent_price):
+        new_house = self.user.add_house(self.housing.id, city, address, size, rent_id, price, bedroomcount, furnish, other, 3, rent_price)
         if new_house not in self.housing.houses:
             new_house.approval = 3
             if new_house not in self.housing.houses:
@@ -167,12 +169,11 @@ class Session:
                 self.housing.house_requests.append(new_house)
                 conn.execute("INSERT INTO HouseRequest VALUES (?)", (new_house.id, ))
                 conn.commit()
-                print("Your request has sent to your housing.")
             else:
                 print("You have sent request or it's on sell.")
         else:
             (self.housing.houses.index(new_house)).approval = 1
-            conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (1, h.id, ))
+            conn.execute("UPDATE House SET Approval = (?) WHERE HouseID = (?)", (1, new_house.id, ))
             conn.commit()
             print("Your house is on sell.")
 
@@ -205,12 +206,12 @@ class Session:
     def find_home_list(self, size, price, bedroomcount, furnish, rent_price): #size : min , price : max , furnish : 0 | 1 , bedroomcount : min , rent_price : max
         home_list = []
         for home in self.housing.houses:
-            if home.size >= size and home.price <= price and furnish == home.furnish and bedroomcount <= home.bedroomcount and rent_price >= home.rent_price and home.approval == 1:
+            if home.size >= size and home.price <= price and int(furnish) == home.furnish and bedroomcount <= home.bedroomcount and rent_price >= home.rent_price and home.approval == 1:
                 home_list.append(home)
         return home_list
 
     def check_approval_rent(self , house : House):
-        house.available = 1
+        house.rent_id = 1
 
     def find_home(self, size, price, bedroomcount, furnish, rent_price , best_home : int): #best_home : 1 => lower price , 2 => bigger size
         def Size(a : House):
@@ -231,7 +232,7 @@ class Session:
             else:
                 index = self.housing.houses.index(home_list[0])
                 self.housing.houses[index].approval = 2
-                self.housing.houses[index].available = self.user.id
+                self.housing.houses[index].rent_id = self.user.id
             return home_list[0]
         elif best_home == 2:
             home_list.sort(key=Size , reverse = True)
@@ -244,11 +245,11 @@ class Session:
             else:
                 index = self.housing.houses.index(home_list[0])
                 self.housing.houses[index].approval = 2
-                self.housing.houses[index].available = self.user.id
+                self.housing.houses[index].rent_id = self.user.id
             return home_list[0]
     def show_my_houses(self):
         for i in self.housing.houses:
-            if i.sellerid == self.user.id or i.available == self.user.id:
+            if i.sellerid == self.user.id or i.rent_id == self.user.id:
                 print(i)
 
 class Ui_CreateHousing(object):
@@ -455,9 +456,352 @@ class Ui_HousingCheck(object):
         self.signinHousingUi.setupUi(self.signinHousingWindow)
         self.signinHousingWindow.show()
 
+class Ui_AddHouse(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(390, 540)
+        Form.setMaximumSize(QtCore.QSize(390, 540))
+        self.verticalLayoutWidget = QtWidgets.QWidget(Form)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 40, 261, 455))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.formLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.formLayout.setContentsMargins(0, 0, 0, 0)
+        self.formLayout.setSpacing(0)
+        self.formLayout.setObjectName("formLayout")
+        self.cityLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.cityLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.cityLabel.setObjectName("cityLabel")
+        self.formLayout.addWidget(self.cityLabel)
+        self.cityTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.cityTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.cityTextEdit.setObjectName("cityTextEdit")
+        self.formLayout.addWidget(self.cityTextEdit)
+        self.addressLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.addressLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.addressLabel.setObjectName("addressLabel")
+        self.formLayout.addWidget(self.addressLabel)
+        self.addressTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.addressTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.addressTextEdit.setObjectName("addressTextEdit")
+        self.formLayout.addWidget(self.addressTextEdit)
+        self.sizeLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.sizeLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.sizeLabel.setObjectName("sizeLabel")
+        self.formLayout.addWidget(self.sizeLabel)
+        self.sizeTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.sizeTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.sizeTextEdit.setObjectName("sizeTextEdit")
+        self.formLayout.addWidget(self.sizeTextEdit)
+        self.priceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.priceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.priceLabel.setObjectName("priceLabel")
+        self.formLayout.addWidget(self.priceLabel)
+        self.priceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.priceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.priceTextEdit.setObjectName("priceTextEdit")
+        self.formLayout.addWidget(self.priceTextEdit)
+        self.rentPriceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.rentPriceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.rentPriceLabel.setObjectName("rentPriceLabel")
+        self.formLayout.addWidget(self.rentPriceLabel)
+        self.rentPriceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.rentPriceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.rentPriceTextEdit.setObjectName("rentPriceTextEdit")
+        self.formLayout.addWidget(self.rentPriceTextEdit)
+        self.bedroomCountLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.bedroomCountLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.bedroomCountLabel.setObjectName("bedroomCountLabel")
+        self.formLayout.addWidget(self.bedroomCountLabel)
+        self.bedroomCountTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.bedroomCountTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.bedroomCountTextEdit.setObjectName("bedroomCountTextEdit")
+        self.formLayout.addWidget(self.bedroomCountTextEdit)
+        self.furnishedLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.furnishedLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.furnishedLabel.setObjectName("furnishedLabel")
+        self.formLayout.addWidget(self.furnishedLabel)
+        self.furnishedTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.furnishedTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.furnishedTextEdit.setObjectName("furnishedTextEdit")
+        self.formLayout.addWidget(self.furnishedTextEdit)
+        self.otherLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.otherLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.otherLabel.setObjectName("otherLabel")
+        self.formLayout.addWidget(self.otherLabel)
+        self.otherTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.otherTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.otherTextEdit.setObjectName("otherTextEdit")
+        self.formLayout.addWidget(self.otherTextEdit)
+        self.addHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.add_house())
+        self.addHouseButton.setObjectName("addHouseButton")
+        self.formLayout.addWidget(self.addHouseButton)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Saha Housings - Add a House"))
+        self.cityLabel.setText(_translate("Form", "City"))
+        self.addressLabel.setText(_translate("Form", "Address"))
+        self.sizeLabel.setText(_translate("Form", "Size"))
+        self.priceLabel.setText(_translate("Form", "price"))
+        self.rentPriceLabel.setText(_translate("Form", "Rent price"))
+        self.rentPriceTextEdit.setPlaceholderText(_translate("Form", "(Type 0 if this house is not for rent)"))
+        self.bedroomCountLabel.setText(_translate("Form", "Bedroom Count"))
+        self.furnishedLabel.setText(_translate("Form", "Furnished"))
+        self.furnishedTextEdit.setPlaceholderText(_translate("Form", "(True or False)"))
+        self.otherLabel.setText(_translate("Form", "Other"))
+        self.otherTextEdit.setPlaceholderText(_translate("Form", "(etc.)"))
+        self.addHouseButton.setText(_translate("Form", "Add House"))
+
+    def add_house(self):
+        ui.session.add_house(self.cityTextEdit.toPlainText(), self.addressTextEdit.toPlainText(), int(self.sizeTextEdit.toPlainText()), 1, int(self.priceTextEdit.toPlainText()), int(self.bedroomCountTextEdit.toPlainText()), self.furnishedTextEdit.toPlainText(), self.otherTextEdit.toPlainText(), int(self.rentPriceTextEdit.toPlainText()))
+        succdialog = QtWidgets.QMessageBox()
+        succdialog.setWindowTitle("Success")
+        succdialog.setText(f"Your request to add a house to {ui.housing.name} added.")
+        button = succdialog.exec()
+
+        if button == QtWidgets.QMessageBox.Ok:
+            succdialog.close()
+
+class TableModel(QtCore.QAbstractTableModel):
+
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            value = self._data.iloc[index.row(), index.column()]
+            return str(value)
+
+    def rowCount(self, index):
+        return self._data.shape[0]
+
+    def columnCount(self, index):
+        return self._data.shape[1]
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return str(self._data.columns[section])
+
+            if orientation == Qt.Vertical:
+                return str(self._data.index[section])
+
+class Ui_ShowSearchHouse(object):
+    def setupUi(self, SearchHouse, housesList):
+        SearchHouse.setObjectName("SearchHouse")
+        SearchHouse.resize(664, 408)
+        SearchHouse.setMaximumSize(QtCore.QSize(664, 408))
+        self.verticalLayoutWidget = QtWidgets.QWidget(SearchHouse)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 40, 621, 331))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.infoLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.infoLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.infoLabel.setObjectName("infoLabel")
+        self.verticalLayout.addWidget(self.infoLabel)
+        self.tableView = QtWidgets.QTableView(self.verticalLayoutWidget)
+        self.tableView.setObjectName("tableView")
+        data = []
+        columns = ["City", "Address", "Size", "Price", "Rent price", "Bedroom count", "Furnished", "Other"]
+        for h in housesList:
+            data.append([h.city, h.address, h.size, h.price, h.rent_price, h.bedroomcount, h.furnish, h.other])
+        realData = pd.DataFrame(data, columns=columns)
+        self.model = TableModel(realData)
+        self.tableView.setModel(self.model)
+        self.verticalLayout.addWidget(self.tableView)
+
+        self.retranslateUi(SearchHouse)
+        QtCore.QMetaObject.connectSlotsByName(SearchHouse)
+
+    def retranslateUi(self, SearchHouse):
+        _translate = QtCore.QCoreApplication.translate
+        SearchHouse.setWindowTitle(_translate("SearchHouse", "Saha Housings - Search for Houses"))
+        self.infoLabel.setText(_translate("SearchHouse", "Houses"))
+
+class Ui_SearchHouse(object):
+    def setupUi(self, SearchHouse):
+        SearchHouse.setObjectName("SearchHouse")
+        SearchHouse.resize(390, 400)
+        SearchHouse.setMaximumSize(QtCore.QSize(390, 400))
+        self.verticalLayoutWidget = QtWidgets.QWidget(SearchHouse)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 40, 261, 311))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.formLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.formLayout.setContentsMargins(0, 0, 0, 0)
+        self.formLayout.setSpacing(0)
+        self.formLayout.setObjectName("formLayout")
+        self.sizeLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.sizeLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.sizeLabel.setObjectName("sizeLabel")
+        self.formLayout.addWidget(self.sizeLabel)
+        self.sizeTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.sizeTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.sizeTextEdit.setObjectName("sizeTextEdit")
+        self.formLayout.addWidget(self.sizeTextEdit)
+        self.priceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.priceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.priceLabel.setObjectName("priceLabel")
+        self.formLayout.addWidget(self.priceLabel)
+        self.priceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.priceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.priceTextEdit.setObjectName("priceTextEdit")
+        self.formLayout.addWidget(self.priceTextEdit)
+        self.rentPriceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.rentPriceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.rentPriceLabel.setObjectName("rentPriceLabel")
+        self.formLayout.addWidget(self.rentPriceLabel)
+        self.rentPriceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.rentPriceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.rentPriceTextEdit.setObjectName("rentPriceTextEdit")
+        self.formLayout.addWidget(self.rentPriceTextEdit)
+        self.bedroomCountLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.bedroomCountLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.bedroomCountLabel.setObjectName("bedroomCountLabel")
+        self.formLayout.addWidget(self.bedroomCountLabel)
+        self.bedroomCountTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.bedroomCountTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.bedroomCountTextEdit.setObjectName("bedroomCountTextEdit")
+        self.formLayout.addWidget(self.bedroomCountTextEdit)
+        self.furnishedLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.furnishedLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.furnishedLabel.setObjectName("furnishedLabel")
+        self.formLayout.addWidget(self.furnishedLabel)
+        self.furnishedTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.furnishedTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.furnishedTextEdit.setObjectName("furnishedTextEdit")
+        self.formLayout.addWidget(self.furnishedTextEdit)
+        self.searchHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.search_house())
+        self.searchHouseButton.setObjectName("searchHouseButton")
+        self.formLayout.addWidget(self.searchHouseButton)
+
+        self.retranslateUi(SearchHouse)
+        QtCore.QMetaObject.connectSlotsByName(SearchHouse)
+
+    def retranslateUi(self, SearchHouse):
+        _translate = QtCore.QCoreApplication.translate
+        SearchHouse.setWindowTitle(_translate("SearchHouse", "Saha Housings - Search for a House"))
+        self.sizeLabel.setText(_translate("SearchHouse", "Size"))
+        self.priceLabel.setText(_translate("SearchHouse", "price"))
+        self.rentPriceLabel.setText(_translate("SearchHouse", "Rent price"))
+        self.rentPriceTextEdit.setPlaceholderText(_translate("SearchHouse", "(Type 0 if your not looking for renting)"))
+        self.bedroomCountLabel.setText(_translate("SearchHouse", "Bedroom Count"))
+        self.furnishedLabel.setText(_translate("SearchHouse", "Furnished"))
+        self.furnishedTextEdit.setPlaceholderText(_translate("SearchHouse", "(True or False)"))
+        self.searchHouseButton.setText(_translate("SearchHouse", "Search House"))
+    
+    def search_house(self):
+        housesList = ui.session.find_home_list(int(self.sizeTextEdit.toPlainText()), int(self.priceTextEdit.toPlainText()), int(self.bedroomCountTextEdit.toPlainText()), bool(self.furnishedTextEdit.toPlainText), int(self.rentPriceTextEdit.toPlainText()))
+        self.showSearchHouseWindow = QtWidgets.QWidget()
+        self.showSearchHouseUi = Ui_ShowSearchHouse()
+        self.showSearchHouseUi.setupUi(self.showSearchHouseWindow, housesList)
+        self.showSearchHouseWindow.show()
+
+class Ui_BuyBestHouse(object):
+    def setupUi(self, BuyBestHouse):
+        BuyBestHouse.setObjectName("BuyBestHouse")
+        BuyBestHouse.resize(390, 440)
+        BuyBestHouse.setMaximumSize(QtCore.QSize(390, 440))
+        self.verticalLayoutWidget = QtWidgets.QWidget(BuyBestHouse)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 40, 261, 361))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.formLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.formLayout.setContentsMargins(0, 0, 0, 0)
+        self.formLayout.setSpacing(0)
+        self.formLayout.setObjectName("formLayout")
+        self.sizeLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.sizeLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.sizeLabel.setObjectName("sizeLabel")
+        self.formLayout.addWidget(self.sizeLabel)
+        self.sizeTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.sizeTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.sizeTextEdit.setObjectName("sizeTextEdit")
+        self.formLayout.addWidget(self.sizeTextEdit)
+        self.priceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.priceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.priceLabel.setObjectName("priceLabel")
+        self.formLayout.addWidget(self.priceLabel)
+        self.priceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.priceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.priceTextEdit.setObjectName("priceTextEdit")
+        self.formLayout.addWidget(self.priceTextEdit)
+        self.rentPriceLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.rentPriceLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.rentPriceLabel.setObjectName("rentPriceLabel")
+        self.formLayout.addWidget(self.rentPriceLabel)
+        self.rentPriceTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.rentPriceTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.rentPriceTextEdit.setObjectName("rentPriceTextEdit")
+        self.formLayout.addWidget(self.rentPriceTextEdit)
+        self.bedroomCountLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.bedroomCountLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.bedroomCountLabel.setObjectName("bedroomCountLabel")
+        self.formLayout.addWidget(self.bedroomCountLabel)
+        self.bedroomCountTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.bedroomCountTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.bedroomCountTextEdit.setObjectName("bedroomCountTextEdit")
+        self.formLayout.addWidget(self.bedroomCountTextEdit)
+        self.furnishedLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.furnishedLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.furnishedLabel.setObjectName("furnishedLabel")
+        self.formLayout.addWidget(self.furnishedLabel)
+        self.furnishedTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.furnishedTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.furnishedTextEdit.setObjectName("furnishedTextEdit")
+        self.formLayout.addWidget(self.furnishedTextEdit)
+        self.bestHouseTypeLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.bestHouseTypeLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.bestHouseTypeLabel.setObjectName("bestHouseTypeLabel")
+        self.formLayout.addWidget(self.bestHouseTypeLabel)
+        self.bestHouseTypeComboBox = QtWidgets.QComboBox(self.verticalLayoutWidget)
+        self.bestHouseTypeComboBox.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.bestHouseTypeComboBox.setEditable(False)
+        self.bestHouseTypeComboBox.setCurrentText("Your best house by?")
+        self.bestHouseTypeComboBox.setMaxVisibleItems(2)
+        self.bestHouseTypeComboBox.setMaxCount(2)
+        self.bestHouseTypeComboBox.setObjectName("bestHouseTypeComboBox")
+        self.bestHouseTypeComboBox.addItem("By Price")
+        self.bestHouseTypeComboBox.addItem("By Size")
+        self.formLayout.addWidget(self.bestHouseTypeComboBox)
+        self.searchHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.buy_best_house())
+        self.searchHouseButton.setObjectName("searchHouseButton")
+        self.formLayout.addWidget(self.searchHouseButton)
+
+        self.retranslateUi(BuyBestHouse)
+        QtCore.QMetaObject.connectSlotsByName(BuyBestHouse)
+
+    def retranslateUi(self, BuyBestHouse):
+        _translate = QtCore.QCoreApplication.translate
+        BuyBestHouse.setWindowTitle(_translate("BuyBestHouse", "Saha Housings - Buy the Bes House"))
+        self.sizeLabel.setText(_translate("BuyBestHouse", "Size"))
+        self.priceLabel.setText(_translate("BuyBestHouse", "price"))
+        self.rentPriceLabel.setText(_translate("BuyBestHouse", "Rent price"))
+        self.rentPriceTextEdit.setPlaceholderText(_translate("BuyBestHouse", "(Type 0 if your not looking for renting)"))
+        self.bedroomCountLabel.setText(_translate("BuyBestHouse", "Bedroom Count"))
+        self.furnishedLabel.setText(_translate("BuyBestHouse", "Furnished"))
+        self.furnishedTextEdit.setPlaceholderText(_translate("BuyBestHouse", "(True or False)"))
+        self.bestHouseTypeLabel.setText(_translate("BuyBestHouse", "Best house type"))
+        self.bestHouseTypeComboBox.setPlaceholderText(_translate("BuyBestHouse", "Your best house by?"))
+        self.searchHouseButton.setText(_translate("BuyBestHouse", "Buy House"))
+
+    def buy_best_house(self):
+        house = ui.session.find_home(int(self.sizeTextEdit.toPlainText()), int(self.priceTextEdit.toPlainText()), int(self.bedroomCountTextEdit.toPlainText()), bool(self.furnishedTextEdit.toPlainText()), int(self.rentPriceTextEdit.toPlainText()), self.bestHouseTypeComboBox.currentIndex()+1)
+        succdialog = QtWidgets.QMessageBox()
+        succdialog.setWindowTitle("Success")
+        succdialog.setText(f"House with the id: {house.id} bought or rented.")
+        button = succdialog.exec()
+
+        if button == QtWidgets.QMessageBox.Ok:
+            succdialog.close()
+
 class Ui_MainWindow(object):
-    housing = None
-    session = None
+    housing: Housing = None
+    session: Session = None
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -511,10 +855,10 @@ class Ui_MainWindow(object):
         self.addHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4, clicked = lambda: self.add_house())
         self.addHouseButton.setObjectName("addHouseButton")
         self.housesLayout.addWidget(self.addHouseButton)
-        self.searchHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
+        self.searchHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4, clicked = lambda: self.search_house())
         self.searchHouseButton.setObjectName("searchHouseButton")
         self.housesLayout.addWidget(self.searchHouseButton)
-        self.buyHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
+        self.buyHouseButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4, clicked = lambda: self.buy_best_house())
         self.buyHouseButton.setObjectName("buyHouseButton")
         self.housesLayout.addWidget(self.buyHouseButton)
         self.checkApprovalButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
@@ -584,7 +928,28 @@ class Ui_MainWindow(object):
         if self.session == None:
             self.check_housing()
         else:
-            pass
+            self.addHouseWindow = QtWidgets.QWidget()
+            self.addHouseUi = Ui_AddHouse()
+            self.addHouseUi.setupUi(self.addHouseWindow)
+            self.addHouseWindow.show()
+
+    def search_house(self):
+        if self.session == None:
+            self.check_housing()
+        else:
+            self.searchHouseWindow = QtWidgets.QWidget()
+            self.searchHouseUi = Ui_SearchHouse()
+            self.searchHouseUi.setupUi(self.searchHouseWindow)
+            self.searchHouseWindow.show()
+
+    def buy_best_house(self):
+        if self.session == None:
+            self.check_housing()
+        else:
+            self.buyBestHouseWindow = QtWidgets.QWidget()
+            self.buyBestHouseUi = Ui_BuyBestHouse()
+            self.buyBestHouseUi.setupUi(self.buyBestHouseWindow)
+            self.buyBestHouseWindow.show()
 
 # main_cursor = conn.cursor()
 # main_cursor.execute("SELECT * FROM Housing")
