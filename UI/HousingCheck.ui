@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Saha Housings - Start</string>
+   <string>Saha Housings - Housing Check</string>
   </property>
   <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">

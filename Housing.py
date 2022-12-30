@@ -381,6 +381,8 @@ class Ui_MainWindow(object):
     def add_house(self):
         if self.housing == None:
             self.check_housing()
+        else:
+            pass
 
 main_cursor = conn.cursor()
 main_cursor.execute("SELECT * FROM Housing")
