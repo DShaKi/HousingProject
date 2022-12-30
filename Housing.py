@@ -100,6 +100,7 @@ class User:
 
     def add_admin(self, id, housingid, username, password, name):
         print("Access Denied!")
+        return None
 
 
 class Admin(User):
@@ -152,7 +153,11 @@ class Session:
 
     def add_admin(self, username, password, name):
         new_admin = self.user.add_admin(self.housing.id, username, password, name)
-        self.housing.admins.append(new_admin)
+        if new_admin != None:
+            self.housing.admins.append(new_admin)
+            return True
+        else:
+            return False
 
     def get_status(self):
         if self.user.isAdmin == 1:
@@ -799,6 +804,83 @@ class Ui_BuyBestHouse(object):
         if button == QtWidgets.QMessageBox.Ok:
             succdialog.close()
 
+class Ui_AddAdmin(object):
+    def setupUi(self, AddAdmin):
+        AddAdmin.setObjectName("AddAdmin")
+        AddAdmin.resize(390, 460)
+        AddAdmin.setMinimumSize(QtCore.QSize(390, 460))
+        AddAdmin.setMaximumSize(QtCore.QSize(390, 460))
+        self.verticalLayoutWidget = QtWidgets.QWidget(AddAdmin)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(60, 60, 281, 341))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.adminUsernameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminUsernameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminUsernameLabel.setObjectName("adminUsernameLabel")
+        self.verticalLayout.addWidget(self.adminUsernameLabel)
+        self.adminUsernameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminUsernameTextEdit.setMaximumSize(QtCore.QSize(16777212, 30))
+        self.adminUsernameTextEdit.setObjectName("adminUsernameTextEdit")
+        self.verticalLayout.addWidget(self.adminUsernameTextEdit)
+        self.adminPasswordLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminPasswordLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminPasswordLabel.setObjectName("adminPasswordLabel")
+        self.verticalLayout.addWidget(self.adminPasswordLabel)
+        self.adminPasswordTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminPasswordTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.adminPasswordTextEdit.setObjectName("adminPasswordTextEdit")
+        self.verticalLayout.addWidget(self.adminPasswordTextEdit)
+        self.adminNameLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.adminNameLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.adminNameLabel.setObjectName("adminNameLabel")
+        self.verticalLayout.addWidget(self.adminNameLabel)
+        self.adminNameTextEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.adminNameTextEdit.setMaximumSize(QtCore.QSize(16777215, 30))
+        self.adminNameTextEdit.setObjectName("adminNameTextEdit")
+        self.verticalLayout.addWidget(self.adminNameTextEdit)
+        self.addAdminButton = QtWidgets.QPushButton(self.verticalLayoutWidget, clicked = lambda: self.add_admin())
+        self.addAdminButton.setObjectName("addAdminButton")
+        self.verticalLayout.addWidget(self.addAdminButton)
+        self.crLabel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.crLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.crLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.crLabel.setObjectName("crLabel")
+        self.verticalLayout.addWidget(self.crLabel)
+
+        self.retranslateUi(AddAdmin)
+        QtCore.QMetaObject.connectSlotsByName(AddAdmin)
+
+    def retranslateUi(self, AddAdmin):
+        _translate = QtCore.QCoreApplication.translate
+        AddAdmin.setWindowTitle(_translate("AddAdmin", "Saha Housings - Add an Admin"))
+        self.adminUsernameLabel.setText(_translate("AddAdmin", "Username"))
+        self.adminPasswordLabel.setText(_translate("AddAdmin", "Password"))
+        self.adminNameLabel.setText(_translate("AddAdmin", "Name"))
+        self.addAdminButton.setText(_translate("AddAdmin", "Add Admin"))
+        self.crLabel.setText(_translate("AddAdmin", "Saha Housings"))
+
+    def add_admin(self):
+        result = ui.session.add_admin(self.adminUsernameTextEdit.toPlainText(), self.adminPasswordTextEdit.toPlainText(), self.adminNameTextEdit.toPlainText())
+        if result == True:
+            succdialog = QtWidgets.QMessageBox()
+            succdialog.setWindowTitle("Success")
+            succdialog.setText("Admin successfully added.")
+            button = succdialog.exec()
+
+            if button == QtWidgets.QMessageBox.Ok:
+                succdialog.close()
+        else:
+            errdialog = QtWidgets.QMessageBox()
+            errdialog.setWindowTitle("Error Occurred!")
+            errdialog.setText("You're not an admin.")
+            button = errdialog.exec()
+
+            if button == QtWidgets.QMessageBox.Ok:
+                errdialog.close()
+
 class Ui_MainWindow(object):
     housing: Housing = None
     session: Session = None
@@ -873,7 +955,7 @@ class Ui_MainWindow(object):
         self.usersLayout = QtWidgets.QVBoxLayout()
         self.usersLayout.setSpacing(10)
         self.usersLayout.setObjectName("usersLayout")
-        self.addAdminButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
+        self.addAdminButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4, clicked = lambda: self.add_admin())
         self.addAdminButton.setObjectName("addAdminButton")
         self.usersLayout.addWidget(self.addAdminButton)
         self.removeUserButton = QtWidgets.QPushButton(self.verticalLayoutWidget_4)
@@ -950,6 +1032,15 @@ class Ui_MainWindow(object):
             self.buyBestHouseUi = Ui_BuyBestHouse()
             self.buyBestHouseUi.setupUi(self.buyBestHouseWindow)
             self.buyBestHouseWindow.show()
+
+    def add_admin(self):
+        if self.session == None:
+            self.check_housing()
+        else:
+            self.addAdminWindow = QtWidgets.QWidget()
+            self.addAdminUi = Ui_AddAdmin()
+            self.addAdminUi.setupUi(self.addAdminWindow)
+            self.addAdminWindow.show()
 
 # main_cursor = conn.cursor()
 # main_cursor.execute("SELECT * FROM Housing")
