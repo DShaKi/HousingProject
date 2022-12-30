@@ -2,6 +2,8 @@ from PyQt5 import QtCore, QtWidgets, Qt
 import sqlite3
 import uuid
 import hashlib
+import sys
+from UI.HousingCheckUi import Ui_HousingCheck
 
 conn = sqlite3.connect('HousingDB.db')
 
@@ -370,17 +372,15 @@ class Ui_MainWindow(object):
         self.removeUserButton.setText(_translate("MainWindow", "Remove User"))
         self.showHousingInfoButton.setText(_translate("MainWindow", "Show Housing Info"))
 
+    def check_housing(self):
+        self.checkHousingWindow = QtWidgets.QWidget()
+        self.checkHousingUi = Ui_HousingCheck()
+        self.checkHousingUi.setupUi(self.checkHousingWindow)
+        self.checkHousingWindow.show()
+
     def add_house(self):
         if self.housing == None:
-            self.hdlg = QtWidgets.QWidget()
-            self.createHousingButton = QtWidgets.QPushButton("Create Housing", clicked = lambda: self.create_housing())
-            self.loginHousingButton = QtWidgets.QPushButton("Login to a Housing", clicked = lambda: self.create_housing())
-            self.hdlg.addButton(self.createHousingButton)
-            self.hdlg.addButton(self.loginHousingButton)
-            self.hdlg.show()
-
-    def create_housing(self):
-        self.hdlg.show()
+            self.check_housing()
 
 main_cursor = conn.cursor()
 main_cursor.execute("SELECT * FROM Housing")
